@@ -1,0 +1,15 @@
+{
+  "name": "exercicio2_modulos",
+  "version": "1.0.0",
+  "description": "Exercicio 2 do curso sobre modulos",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Leandro Henrique",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "inquirer": "^8.0.0"
+  }
+}
