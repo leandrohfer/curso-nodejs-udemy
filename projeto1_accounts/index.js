@@ -26,6 +26,7 @@ function operation() {
         choices: [
           "Criar Conta",
           "Consultar Saldo",
+          "Transferência entre Contas",
           "Depositar",
           "Sacar",
           "Sair",
@@ -40,6 +41,8 @@ function operation() {
         inicioCriarConta();
       } else if (action == "Consultar Saldo") {
         consultaSaldo();
+      } else if (action == "Transferência entre Contas") {
+        transferenciaSaldo();
       } else if (action == "Depositar") {
         depositarValor();
       } else if (action == "Sacar") {
@@ -141,6 +144,56 @@ function consultaSaldo() {
     .catch((err) => console.log(err));
 }
 
+function transferenciaSaldo() {
+  inquirer
+    .prompt([
+      {
+        name: "nomeConta1",
+        message: "Digite o nome da conta que irá enviar o valor:",
+      },
+    ])
+    .then((answer) => {
+      const nomeConta1 = answer["nomeConta1"];
+
+      if (!checarConta(nomeConta1)) {
+        transferenciaSaldo();
+        return;
+      }
+
+      inquirer
+        .prompt([
+          {
+            name: "nomeConta2",
+            message: "Digite o nome da conta que irá receber o valor:",
+          },
+        ])
+        .then((answer) => {
+          const nomeConta2 = answer["nomeConta2"];
+
+          if (!checarConta(nomeConta2)) {
+            transferenciaSaldo();
+            return;
+          }
+
+          inquirer
+            .prompt([
+              {
+                name: "montante",
+                message: `Quanto você deseja transferir da conta ${nomeConta1} para a conta ${nomeConta2}:`,
+              },
+            ])
+            .then((answer) => {
+              const montante = answer["montante"];
+
+              transferirMontante(nomeConta1, nomeConta2, montante);
+            })
+            .catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
+    })
+    .catch((err) => console.log(err));
+}
+
 function depositarValor() {
   inquirer
     .prompt([
@@ -207,6 +260,9 @@ function sacarValor() {
     .catch((err) => console.log(err));
 }
 
+/**
+ * Checa se existe uma conta de mesmo nome do parâmetro de entrada da função
+ */
 function checarConta(nomeConta) {
   if (!fs.existsSync(`contas/${nomeConta}.json`)) {
     console.log(
@@ -216,6 +272,50 @@ function checarConta(nomeConta) {
   }
 
   return true;
+}
+
+function transferirMontante(nomeConta1, nomeConta2, montante) {
+  const dadosConta1 = getConta(nomeConta1);
+  const dadosConta2 = getConta(nomeConta2);
+
+  if (!montante) {
+    console.log(
+      chalk.bgRed.black("\nNenhum valor foi digitado, tente novamente\n")
+    );
+    transferenciaSaldo();
+    return;
+  }
+
+  if (parseFloat(dadosConta1.balance) - parseFloat(montante) < 0) {
+    console.log(
+      chalk.bgRed.black(`\nSaldo insuficiente para transferência!\n`)
+    );
+    operation();
+  } else {
+    dadosConta1.balance =
+      parseFloat(dadosConta1.balance) - parseFloat(montante);
+    dadosConta2.balance =
+      parseFloat(dadosConta2.balance) + parseFloat(montante);
+
+    fs.writeFileSync(
+      `contas/${nomeConta1}.json`,
+      JSON.stringify(dadosConta1),
+      (err) => console.log(err)
+    );
+
+    fs.writeFileSync(
+      `contas/${nomeConta2}.json`,
+      JSON.stringify(dadosConta2),
+      (err) => console.log(err)
+    );
+
+    console.log(
+      chalk.green(
+        `\nFoi transferido o valor de R$${montante} entre as contas!\n`
+      )
+    );
+    operation();
+  }
 }
 
 function adicionarMontante(nomeConta, montante) {
@@ -280,7 +380,9 @@ function removerMontante(nomeConta, montante) {
 
   operation();
 }
-
+/**
+ * Função para retornar os dados de uma conta escolhida em formato JSON
+ */
 function getConta(nomeConta) {
   const contaJSON = fs.readFileSync(`contas/${nomeConta}.json`, {
     encoding: "utf-8",
