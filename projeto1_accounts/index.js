@@ -38,6 +38,20 @@ function operation() {
 
       if (action == "Criar Conta") {
         inicioCriarConta();
+      } else if (action == "Consultar Saldo") {
+        consultaSaldo();
+      } else if (action == "Depositar") {
+        depositarValor();
+      } else if (action == "Sacar") {
+        sacarValor();
+      } else if (action == "Sair") {
+        console.log(
+          chalk.bgBlue.black("\nObrigado por utilizar o nosso banco!\n")
+        );
+        /**
+         * método para sair do software em questão (terminal)
+         */
+        process.exit();
       }
     })
     .catch((err) => console.log(err));
@@ -52,12 +66,13 @@ function inicioCriarConta() {
   criacaoConta();
 }
 
+// Função que cria propriamente a conta
 function criacaoConta() {
   inquirer
     .prompt([
       {
         name: "nomeConta",
-        message: "Digite o nome da sua conta: ",
+        message: "Digite o nome da sua conta:",
       },
     ])
     .then((answer) => {
@@ -65,7 +80,7 @@ function criacaoConta() {
 
       /**
        * Verificação se o diretório 'contas' já existe, caso não exista ele é criado
-       */ 
+       */
       if (!fs.existsSync("contas")) {
         fs.mkdirSync("contas");
       }
@@ -73,13 +88,13 @@ function criacaoConta() {
       /**
        *  Verificação se já existe uma conta com o mesmo nome, caso exista, o software
        *  retorna a mesma função.
-       */ 
+       */
       if (fs.existsSync(`contas/${nomeConta}.json`)) {
         console.log(
           chalk.bgRed.black("Esta conta já existe, escolha outro nome!")
         );
         criacaoConta();
-        return
+        return;
       }
 
       /**
@@ -89,11 +104,193 @@ function criacaoConta() {
         console.log(err);
       });
 
-      console.log(chalk.green('\nParabéns, a sua conta foi criada com sucesso!\n'))
+      console.log(
+        chalk.green("\nParabéns, a sua conta foi criada com sucesso!\n")
+      );
       /**
        * retorno para a função principal
        */
-      operation()
+      operation();
     })
     .catch((err) => console.log(err));
+}
+
+function consultaSaldo() {
+  inquirer
+    .prompt([
+      {
+        name: "nomeConta",
+        message: "Digite o nome da conta que você deseja ver o saldo:",
+      },
+    ])
+    .then((answer) => {
+      const nomeConta = answer["nomeConta"];
+
+      if (!checarConta(nomeConta)) {
+        consultaSaldo();
+        return;
+      }
+
+      const dadosConta = getConta(nomeConta);
+      const saldo = parseFloat(dadosConta.balance);
+
+      console.log(
+        chalk.bgGreen.black(`\nO saldo da conta é R$${saldo}!\n`)
+      );
+
+      operation();
+    })
+    .catch((err) => console.log(err));
+}
+
+/**
+ * Função para depositar algum valor no balanço de uma determinada conta
+ */
+function depositarValor() {
+  inquirer
+    .prompt([
+      {
+        name: "nomeConta",
+        message: "Digite o nome da conta que deseja depositar:",
+      },
+    ])
+    .then((answer) => {
+      const nomeConta = answer["nomeConta"];
+
+      if (!checarConta(nomeConta)) {
+        depositarValor();
+        return;
+      }
+
+      inquirer
+        .prompt([
+          {
+            name: "montante",
+            message: "Quanto você deseja depositar nesta conta:",
+          },
+        ])
+        .then((answer) => {
+          const montante = answer["montante"];
+
+          adicionarMontante(nomeConta, montante);
+
+          operation();
+        })
+        .catch((err) => console.log(err));
+    })
+    .catch((err) => console.log(err));
+}
+
+function sacarValor() {
+  inquirer
+    .prompt([
+      {
+        name: "nomeConta",
+        message: "Digite o nome da conta que deseja sacar:",
+      },
+    ])
+    .then((answer) => {
+      const nomeConta = answer["nomeConta"];
+
+      if (!checarConta(nomeConta)) {
+        sacarValor();
+        return;
+      }
+
+      inquirer
+        .prompt([
+          {
+            name: "montante",
+            message: "Quanto você deseja sacar desta conta:",
+          },
+        ])
+        .then((answer) => {
+          const montante = answer["montante"];
+
+          removerMontante(nomeConta, montante);
+
+          operation();
+        })
+        .catch((err) => console.log(err));
+    })
+    .catch((err) => console.log(err));
+}
+
+function checarConta(nomeConta) {
+  if (!fs.existsSync(`contas/${nomeConta}.json`)) {
+    console.log(
+      chalk.bgRed.black("\nEsta conta não existe, escolha outro nome!\n")
+    );
+    return false;
+  }
+
+  return true;
+}
+
+function adicionarMontante(nomeConta, montante) {
+  const dadosConta = getConta(nomeConta);
+
+  if (!montante) {
+    console.log(
+      chalk.bgRed.black(
+        "\nNenhum valor de depósito foi digitado, tente novamente\n"
+      )
+    );
+    depositarValor();
+    return;
+  }
+
+  dadosConta.balance = parseFloat(montante) + parseFloat(dadosConta.balance);
+
+  fs.writeFileSync(
+    `contas/${nomeConta}.json`,
+    JSON.stringify(dadosConta),
+    (err) => console.log(err)
+  );
+  console.log(
+    chalk.green(
+      `\nFoi depositado o valor de R$${montante} na conta selecionada!\n`
+    )
+  );
+}
+
+function removerMontante(nomeConta, montante) {
+  const dadosConta = getConta(nomeConta);
+
+  if (!montante) {
+    console.log(
+      chalk.bgRed.black(
+        "\nNenhum valor de saque foi digitado, tente novamente\n"
+      )
+    );
+    sacarValor();
+    return;
+  }
+
+  if (parseFloat(dadosConta.balance) - parseFloat(montante) < 0) {
+    console.log(chalk.bgRed.black(`\nSaldo insuficiente para saque!\n`));
+  } else {
+    dadosConta.balance = parseFloat(dadosConta.balance) - parseFloat(montante);
+
+    fs.writeFileSync(
+      `contas/${nomeConta}.json`,
+      JSON.stringify(dadosConta),
+      (err) => console.log(err)
+    );
+
+    console.log(
+      chalk.green(
+        `\nFoi sacado o valor de R$${montante} na conta selecionada!\n`
+      )
+    );
+  }
+}
+
+function getConta(nomeConta) {
+  const contaJSON = fs.readFileSync(`contas/${nomeConta}.json`, {
+    encoding: "utf-8",
+    flag: "r",
+  });
+
+  return JSON.parse(contaJSON);
 }
