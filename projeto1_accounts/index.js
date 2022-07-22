@@ -134,18 +134,13 @@ function consultaSaldo() {
       const dadosConta = getConta(nomeConta);
       const saldo = parseFloat(dadosConta.balance);
 
-      console.log(
-        chalk.bgGreen.black(`\nO saldo da conta é R$${saldo}!\n`)
-      );
+      console.log(chalk.bgGreen.black(`\nO saldo da conta é R$${saldo}!\n`));
 
       operation();
     })
     .catch((err) => console.log(err));
 }
 
-/**
- * Função para depositar algum valor no balanço de uma determinada conta
- */
 function depositarValor() {
   inquirer
     .prompt([
@@ -173,8 +168,6 @@ function depositarValor() {
           const montante = answer["montante"];
 
           adicionarMontante(nomeConta, montante);
-
-          operation();
         })
         .catch((err) => console.log(err));
     })
@@ -208,8 +201,6 @@ function sacarValor() {
           const montante = answer["montante"];
 
           removerMontante(nomeConta, montante);
-
-          operation();
         })
         .catch((err) => console.log(err));
     })
@@ -252,6 +243,8 @@ function adicionarMontante(nomeConta, montante) {
       `\nFoi depositado o valor de R$${montante} na conta selecionada!\n`
     )
   );
+
+  operation();
 }
 
 function removerMontante(nomeConta, montante) {
@@ -284,6 +277,8 @@ function removerMontante(nomeConta, montante) {
       )
     );
   }
+
+  operation();
 }
 
 function getConta(nomeConta) {
