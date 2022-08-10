@@ -26,10 +26,6 @@ app.get("/", (req, res) => {
   res.sendFile(`${raizPath}/index.html`);
 });
 
-/**
- * Por último, é necessário executar o método listen na porta que foi
- * definida anteriormente, podendo ou não executar uma função anônima.
- */
 app.listen(port, () => {
   console.log(`Aplicação rodando na porta ${port}`);
 });
